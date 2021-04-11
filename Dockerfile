@@ -13,9 +13,8 @@ ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     wget \
     python3 python3-pip \
-    jq default-jdk \
+    default-jdk \
     net-tools tshark
-#    vim
 
 RUN pip3 install hpack packaging pyyaml
 
