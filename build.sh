@@ -79,6 +79,7 @@ bargs="--build-arg base_tag=${base_tag}"
 bargs+=" --build-arg plantumljar_ver=${plantumljar_ver}"
 
 set -x
-docker build --rm "${bargs}" -t testillano/kcap:"${image_tag}" . || return 1
+# shellcheck disable=SC2086
+docker build --rm ${bargs} -t testillano/kcap:"${image_tag}" . || return 1
 set +x
 
