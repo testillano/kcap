@@ -31,7 +31,7 @@ You may use a procedure like `./capture.sh` to perform the following actions:
 The script `capture.sh` can be used separately without need to clone/download this project because deployment patching procedure will pull the `kcap` docker image from Docker Hub when needed:
 
 ```bash
-$ wget https://raw.githubusercontent.com/testillano/kcap/master/capture.sh
+$ wget https://raw.githubusercontent.com/testillano/kcap/master/capture.sh && chmod +x capture.sh
 ```
 
 ## License
