@@ -35,7 +35,7 @@
 #############
 # VARIABLES #
 #############
-SCR_DIR="$(dirname "$(readlink -f $0)")"
+SCR_DIR="$(dirname "$(readlink -f "$0")")"
 PATCH_TIMEOUT=200s
 KCAP_TAG=${KCAP_TAG:-latest}
 unset DEPLOYMENTS_TO_CAPTURE ; declare -A DEPLOYMENTS_TO_CAPTURE # deployments with listen ports to capture
@@ -82,16 +82,22 @@ patch_deployment() {
   echo "Patching deployment '${deployment}' ..."
 
   # Pods in deployment:
-  local selector=$(kubectl get deployment "${deployment}" -n "${namespace}" -o wide --no-headers | awk '{ print $NF }')
-  local pods=( $(kubectl -n "${namespace}" get pod --selector=${selector} --no-headers | awk '{ print $1 }') )
+  local selector
+  selector=$(kubectl get deployment "${deployment}" -n "${namespace}" -o wide --no-headers | awk '{ print $NF }')
+  local pods
+  # shellcheck disable=SC2207
+  pods=( $(kubectl -n "${namespace}" get pod --selector="${selector}" --no-headers | awk '{ print $1 }') )
 
   # Already patched ?
   local willBePatched
   willBePatched=()
+  # shellcheck disable=SC2068
   for pod in ${pods[@]}
   do
-    kubectl get pod "${pod}" -n "${namespace}" -o=jsonpath='{.spec.containers[*].name}' | grep -qw kcap
-    [ $? -ne 0 ] && willBePatched+=(${pod})
+    if ! kubectl get pod "${pod}" -n "${namespace}" -o=jsonpath='{.spec.containers[*].name}' | grep -qw kcap
+    then
+      willBePatched+=("${pod}")
+    fi
   done
 
   kubectl patch deployment/"${deployment}" -n "${namespace}" -p '{
@@ -118,18 +124,21 @@ patch_deployment() {
       }
     }'
 
+  # shellcheck disable=SC2068
   for pod in ${willBePatched[@]}
   do
     echo "Wait for pod '${pod}' deletion ..."
-    kubectl -n "${namespace}" wait --for=delete pod/${pod} --timeout=${PATCH_TIMEOUT} &>/dev/null
+    kubectl -n "${namespace}" wait --for=delete pod/"${pod}" --timeout="${PATCH_TIMEOUT}" &>/dev/null
   done
 
   # The next is assumed due to high availability default behavior (new pods are ready before starting to delete the old ones):
   # echo "Check new pods creation ..."
   # kubectl -n "${namespace}" wait --for=condition=Ready pod/${pod} --timeout=${PATCH_TIMEOUT}
 
+  # shellcheck disable=SC2207
   pods=( $(kubectl -n "${namespace}" get pod --selector="${selector}" --no-headers | awk '{ print $1 }') )
   local cmd=
+  # shellcheck disable=SC2068
   for pod in ${pods[@]}
   do
     [ -z "${ANY_PATCHED_POD}" ] && ANY_PATCHED_POD="${pod}" # anyone is valid for final merge
@@ -160,14 +169,20 @@ capture_deployment() {
   [ -z "$2" ] && echo "Usage: ${FUNCNAME[0]} <namespace> <deployment>" && return 1
 
   # Pods in deployment:
-  local selector=$(kubectl get deployment "${deployment}" -n "${namespace}" -o wide --no-headers | awk '{ print $NF }')
-  local pods=( $(kubectl -n "${namespace}" get pod --selector="${selector}" --no-headers | awk '{ print $1 }') )
+  local selector
+  selector=$(kubectl get deployment "${deployment}" -n "${namespace}" -o wide --no-headers | awk '{ print $NF }')
+  local pods
+  # shellcheck disable=SC2207
+  pods=( $(kubectl -n "${namespace}" get pod --selector="${selector}" --no-headers | awk '{ print $1 }') )
 
   local valid=
+  # shellcheck disable=SC2068
   for pod in ${pods[@]}
   do
-    kubectl exec -n "${namespace}" "${pod}" -c kcap -- bash -c "[ -s ports ] && ./start.sh \$(cat ip) \"\$(cat ports)\" ${CLEAN}" 2>/dev/null
-    [ $? -eq 0 ] && valid=yes
+    if kubectl exec -n "${namespace}" "${pod}" -c kcap -- bash -c "[ -s ports ] && ./start.sh \$(cat ip) \"\$(cat ports)\" ${CLEAN}" 2>/dev/null
+    then
+      valid=yes
+    fi
   done
   [ -n "${valid}" ] && DEPLOYMENTS_TO_CAPTURE[${deployment}]=""
 }
@@ -180,13 +195,17 @@ retrieve_artifacts() {
   [ -z "$2" ] && echo "Usage: ${FUNCNAME[0]} <namespace> <deployment>" && return 1
 
   # Pods in deployment:
-  local selector=$(kubectl get deployment "${deployment}" -n "${namespace}" -o wide --no-headers | awk '{ print $NF }')
-  local pods=( $(kubectl -n "${namespace}" get pod --selector=${selector} --no-headers | awk '{ print $1 }') )
+  local selector
+  selector=$(kubectl get deployment "${deployment}" -n "${namespace}" -o wide --no-headers | awk '{ print $NF }')
+  local pods
+  # shellcheck disable=SC2207
+  pods=( $(kubectl -n "${namespace}" get pod --selector="${selector}" --no-headers | awk '{ print $1 }') )
 
+  # shellcheck disable=SC2068
   for pod in ${pods[@]}
   do
     mkdir -p "${ARTIFACTS_DIR}/${pod}"
-    kubectl cp -n "${NAMESPACE}" ${pod}:/kcap/artifacts -c kcap "${ARTIFACTS_DIR}/${pod}" &>/dev/null
+    kubectl cp -n "${NAMESPACE}" "${pod}":/kcap/artifacts -c kcap "${ARTIFACTS_DIR}/${pod}" &>/dev/null
     echo "Generated '${ARTIFACTS_DIR}/${pod}'"
   done
 }
@@ -216,11 +235,12 @@ done
 
 echo
 echo "Press ENTER to retrieve captures, CTRL-C to abort"
-read dummy
+read -r dummy
 
 echo
 echo "Retrieve and merge artifacts ..."
 ARTIFACTS_DIR="${SCR_DIR}/artifacts/$(date +'%d%m%Y_%H%M%S')"
+# shellcheck disable=SC2068
 for deployment in ${!DEPLOYMENTS_TO_CAPTURE[@]}
 do
   retrieve_artifacts "${NAMESPACE}" "${deployment}"
@@ -228,16 +248,16 @@ done
 # Joined together, are uploaded to ANY_PATCHED_POD:
 echo "Merge them within arbitrary pod (${ANY_PATCHED_POD}) ..."
 kubectl exec -n "${NAMESPACE}" "${ANY_PATCHED_POD}" -c kcap -- bash -c "rm -rf /kcap/all-artifacts/" 2>/dev/null
-kubectl cp -n "${NAMESPACE}" "${ARTIFACTS_DIR}" ${ANY_PATCHED_POD}:/kcap/all-artifacts/ -c kcap &>/dev/null
+kubectl cp -n "${NAMESPACE}" "${ARTIFACTS_DIR}" "${ANY_PATCHED_POD}":/kcap/all-artifacts/ -c kcap &>/dev/null
 kubectl exec -n "${NAMESPACE}" "${ANY_PATCHED_POD}" -c kcap -- bash -c "./merge.sh /kcap/all-artifacts" 2>/dev/null
 echo "Retrieve final artifacts ..."
-#rm -rf ${ARTIFACTS_DIR}
-kubectl cp -n "${NAMESPACE}" ${ANY_PATCHED_POD}:/kcap/all-artifacts/ -c kcap "${ARTIFACTS_DIR}" &>/dev/null
+kubectl cp -n "${NAMESPACE}" "${ANY_PATCHED_POD}":/kcap/all-artifacts/ -c kcap "${ARTIFACTS_DIR}" &>/dev/null
 echo "Artifacts available at '${ARTIFACTS_DIR}'"
 
 echo
 echo "Press ENTER to unpatch deployment(s), CTRL-C to abort"
-read dummy
+# shellcheck disable=SC2034
+read -r dummy
 
 echo
 for deployment in ${deployments}

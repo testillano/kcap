@@ -35,7 +35,7 @@
 #############
 # VARIABLES #
 #############
-SCR_DIR="$(dirname "$(readlink -f $0)")"
+SCR_DIR="$(dirname "$(readlink -f "$0")")"
 ARTIFACTS_DIR="${SCR_DIR}/artifacts"
 
 #############
@@ -75,6 +75,7 @@ EOF
 
 [ -z "$2" ] && usage && exit 1
 
+# shellcheck disable=SC2164
 cd "${SCR_DIR}"
 
 IP=$1
@@ -90,7 +91,7 @@ then
   echo "Killing previous tshark processes ..."
   pkill -9 tshark
   #sleep 5
-  rm -rf ${ARTIFACTS_DIR}
+  rm -rf "${ARTIFACTS_DIR}"
 fi
 
 for port in ${PORTS}
@@ -98,13 +99,14 @@ do
   dir="${ARTIFACTS_DIR}/${IP}/${port}"
 
   mkdir -p "${dir}"
-  ps -fe | grep "tshark -i any -f tcp port ${port}" | grep -qv grep
-  if [ $? -ne 0 ]
+  # shellcheck disable=SC2009
+  if ps -fe | grep "tshark -i any -f tcp port ${port}" | grep -qv grep
   then
-    nohup tshark -i any -f "tcp port ${port}" -w "${dir}/capture.pcap" &>/dev/null &
-  else
     echo "You forgot to unpatch deployment previously, so captures may be mixed."
+  else
+    nohup tshark -i any -f "tcp port ${port}" -w "${dir}/capture.pcap" &>/dev/null &
   fi
 done
+# shellcheck disable=SC2009
 ps -fea| grep tshark | grep capture.pcap
 

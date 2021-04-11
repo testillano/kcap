@@ -55,7 +55,7 @@ _read() {
   then
     echo "${varname}"
   else
-    read varname
+    read -r varname
     [ -z "${varname}" ] && varname=${default}
   fi
 }
@@ -63,7 +63,8 @@ _read() {
 #############
 # EXECUTION #
 #############
-cd $(dirname $0)
+# shellcheck disable=SC2164
+cd "$(dirname "$0")"
 echo
 echo "=== Build kcap image ==="
 echo
@@ -78,6 +79,6 @@ bargs="--build-arg base_tag=${base_tag}"
 bargs+=" --build-arg plantumljar_ver=${plantumljar_ver}"
 
 set -x
-docker build --rm ${bargs} -t testillano/kcap:${image_tag} . || return 1
+docker build --rm "${bargs}" -t testillano/kcap:"${image_tag}" . || return 1
 set +x
 

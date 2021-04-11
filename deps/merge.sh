@@ -35,7 +35,7 @@
 #############
 # VARIABLES #
 #############
-SCR_DIR="$(dirname "$(readlink -f $0)")"
+SCR_DIR="$(dirname "$(readlink -f "$0")")"
 
 #############
 # FUNCTIONS #
@@ -68,31 +68,36 @@ EOF
 ARTIFACTS_DIR=$1
 
 # Generating visualizer artifacts:
+# shellcheck disable=SC2207
 pcap_files=( $(find "${ARTIFACTS_DIR}" -follow -name "*.pcap") )
 comma=
 pcaps=
 count=0
+# shellcheck disable=SC2068
 for pcap in ${pcap_files[@]}
 do
   count=$((count+1))
-  port=$(basename $(dirname ${pcap}))
+  port="$(basename "$(dirname "${pcap}")")"
   link=${count}
   pcaps+="${comma}${link}"
   ports+="${comma}${port}"
   comma=","
-  ln -sf ${pcap} ${link}
+  ln -sf "${pcap}" "${link}"
 done
 
+# shellcheck disable=SC2164
 cd "${SCR_DIR}"
-python3 trace_visualizer.py ${pcaps} -http2ports ${ports} &>/dev/null
+python3 trace_visualizer.py "${pcaps}" -http2ports "${ports}" &>/dev/null
 # Alternative: kubectl get pods --all-namespaces -o yaml > pods.yml
 #              python3 trace_visualizer.py ${pcaps} -http2ports ${ports} -pods pods.yml
 
 # Generate ascii art file:
-java -jar plantuml.jar -ttxt $(ls 1_*.puml)
+java -jar plantuml.jar -ttxt "$(ls 1_*.puml)"
 
-for c in $(seq 1 $count); do rm $c; done
+for c in $(seq 1 $count); do rm "$c"; done
+# shellcheck disable=SC2045
 rm -f 1_*merged
-for f in $(ls 1_*.{atxt,pdml,puml,svg} 2>/dev/null); do ext=${f##*.}; mv $f ${ARTIFACTS_DIR}/merged.${ext}; done
-[ ! -f ${ARTIFACTS_DIR}/merged.puml ] && { echo "failed !" ; exit 1 ; }
+# shellcheck disable=SC2045
+for f in $(ls 1_*.{atxt,pdml,puml,svg} 2>/dev/null); do ext=${f##*.}; mv "$f" "${ARTIFACTS_DIR}/merged.${ext}"; done
+[ ! -f "${ARTIFACTS_DIR}"/merged.puml ] && { echo "failed !" ; exit 1 ; }
 
