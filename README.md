@@ -1,6 +1,6 @@
 [![Build docker image and publish to Docker Hub](https://github.com/testillano/kcap/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/testillano/kcap/actions/workflows/docker-publish.yml)
 
-# Kubernetes captures image
+# Kubernetes captures image (WORK-IN-PROGRESS)
 
 This project hosts the stuff to build the `kcap` docker image useful to capture traffic within a kubernetes cluster.
 
