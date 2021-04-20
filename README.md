@@ -1,7 +1,7 @@
 # Kubernetes captures image (WORK-IN-PROGRESS)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Documentation](https://codedocs.xyz/testillano/coffee.svg)](https://codedocs.xyz/testillano/kcap/index.html)
+[![Documentation](https://codedocs.xyz/testillano/kcap.svg)](https://codedocs.xyz/testillano/kcap/index.html)
 [![Ask Me Anything !](https://img.shields.io/badge/Ask%20me-anything-1abc9c.svg)](https://github.com/testillano)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/testillano/kcap/graphs/commit-activity)
 [![Build docker image and publish to Docker Hub](https://github.com/testillano/kcap/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/testillano/kcap/actions/workflows/docker-publish.yml)
