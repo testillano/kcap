@@ -1,0 +1,59 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.demo.name }}
+  labels:
+    {{- include "demo.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.demo.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "demo.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      {{- with .Values.podAnnotations }}
+      annotations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      labels:
+        {{- include "demo.selectorLabels" . | nindent 8 }}
+    spec:
+      initContainers:
+        - name: {{ .Values.demo.name }}-init1
+          image: "{{ .Values.initContainer.image.repository }}:{{ .Values.initContainer.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.initContainer.image.pullPolicy }}
+          command: ["sh", "-c"]
+          args: [ "until nslookup {{ .Values.server1.h2agent.name }} ; do sleep 2; done && until nc -w 1 -z {{ .Values.server1.h2agent.name }} {{ .Values.server1.h2agent.service.server_port }} ; do sleep 2; done && until nc -w 1 -z {{ .Values.server1.h2agent.name }} {{ .Values.server1.h2agent.service.admin_port }} ; do sleep 2; done" ]
+
+        - name: {{ .Values.demo.name }}-init2
+          image: "{{ .Values.initContainer.image.repository }}:{{ .Values.initContainer.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.initContainer.image.pullPolicy }}
+          command: ["sh", "-c"]
+          args: [ "until nslookup {{ .Values.server2.h2agent.name }} ; do sleep 2; done && until nc -w 1 -z {{ .Values.server2.h2agent.name }} {{ .Values.server2.h2agent.service.server_port }} ; do sleep 2; done && until nc -w 1 -z {{ .Values.server2.h2agent.name }} {{ .Values.server2.h2agent.service.admin_port }} ; do sleep 2; done" ]
+
+      containers:
+        - name: demo1
+          image: "{{ .Values.demo.image.repository }}:{{ .Values.demo.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.demo.image.pullPolicy }}
+          resources:
+            {{- toYaml .Values.demo.resources | nindent 12 }}
+          env:
+            - name: H2AGENT_SERVICE_HOST
+              value: server1
+            - name: H2AGENT_SERVICE_PORT_HTTP2_ADMIN
+              value: "{{ .Values.server1.h2agent.service.admin_port }}"
+            - name: H2AGENT_SERVICE_PORT_HTTP2_TRAFFIC
+              value: "{{ .Values.server1.h2agent.service.traffic_port }}"
+        - name: demo2
+          image: "{{ .Values.demo.image.repository }}:{{ .Values.demo.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.demo.image.pullPolicy }}
+          resources:
+            {{- toYaml .Values.demo.resources | nindent 12 }}
+          env:
+            - name: H2AGENT_SERVICE_HOST
+              value: server2
+            - name: H2AGENT_SERVICE_PORT_HTTP2_ADMIN
+              value: "{{ .Values.server1.h2agent.service.admin_port }}"
+            - name: H2AGENT_SERVICE_PORT_HTTP2_TRAFFIC
+              value: "{{ .Values.server1.h2agent.service.traffic_port }}"
+

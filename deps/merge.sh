@@ -73,12 +73,15 @@ pcap_files=( $(find "${ARTIFACTS_DIR}" -follow -name "*.pcap") )
 comma=
 pcaps=
 count=0
+re='^[0-9]+$'
+
 # shellcheck disable=SC2068
 for pcap in ${pcap_files[@]}
 do
   count=$((count+1))
   port="$(basename "$(dirname "${pcap}")")"
   link=${count}
+  if ! [[ $port =~ $re ]]; then continue; fi # skip non-numeric ports
   pcaps+="${comma}${link}"
   ports+="${comma}${port}"
   comma=","
@@ -91,13 +94,40 @@ python3 trace_visualizer.py "${pcaps}" -http2ports "${ports}" &>/dev/null
 # Alternative: kubectl get pods --all-namespaces -o yaml > pods.yml
 #              python3 trace_visualizer.py ${pcaps} -http2ports ${ports} -pods pods.yml
 
-# Generate ascii art file:
-java -jar plantuml.jar -ttxt "$(ls 1_*.puml)"
+# Backup PlantUML for post process and also check that this file has been generated:
+cp "$(ls 1_*.puml)" merged2.puml 2>/dev/null || { echo "ERROR: PlantUML file was not generated !" ; exit 1 ; }
 
+# Generate ascii art:
+java -jar plantuml.jar -ttxt $(ls 1_*.puml)
+
+# Remove symlinks
 for c in $(seq 1 $count); do rm "$c"; done
+
 # shellcheck disable=SC2045
 rm -f 1_*merged
 # shellcheck disable=SC2045
 for f in $(ls 1_*.{atxt,pdml,puml,svg} 2>/dev/null); do ext=${f##*.}; mv "$f" "${ARTIFACTS_DIR}/merged.${ext}"; done
-[ ! -f "${ARTIFACTS_DIR}"/merged.puml ] && { echo "failed !" ; exit 1 ; }
+
+#########################################################################################################################
+# Post-process PlantUML to replace IPs by Pod names:
+#
+# Example:
+#   <artifacts directory>/server1-584987db45-5246g/172.17.0.32
+#   <artifacts directory>/server2-cbcf96fd9-dqlfj/172.17.0.34
+#   <artifacts directory>/server1-584987db45-s748j/172.17.0.35
+#   <artifacts directory>/server2-cbcf96fd9-qrmwt/172.17.0.36
+while read -r line
+do
+  podname="$(echo $line | awk '{ print $1 }' | sed 's/-/./g')" # dashes must be replaced (i.e. dots) to be PUML-compliant
+  ip="$(echo $line | awk '{ print $2 }')"
+
+  sed -i 's/\b'${ip}'\b/'${podname}'/g' merged2.puml
+
+done < <(ls -d ${ARTIFACTS_DIR}/*/* | awk -F/ '{ print $(NF-1) " " $NF }')
+
+# Build atxt/svg
+java -jar plantuml.jar -ttxt merged2.puml
+java -jar plantuml.jar -tsvg merged2.puml
+mv merged2.* "${ARTIFACTS_DIR}"
+#########################################################################################################################
 

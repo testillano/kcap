@@ -20,22 +20,40 @@ You could also build it using the script `./build.sh` located at project root.
 
 ## Usage
 
-You may use a procedure like `./capture.sh` to perform the following actions:
+You may use different scripts to complete the following actions:
 
-* Patch deployments within provided namespace in order to start `kcap` image within every deployment pod.
-* Start captures by mean kubectl remote execution of `/kcap/start.sh` within the `kcap` image.
+`./capture.sh`
+* Patch deployments/statefulsets within provided namespace to include a `kcap` container at every pod.
+* Start captures by mean kubectl remote execution of `/kcap/start.sh` within every `kcap` container.
+
+`./retrieve.sh`
 * Retrieve all the artifacts to ease further analisys.
-* Upload artifacts together to a single `kcap` container.
-* Merge them by mean kubectl remote execution of `/kcap/merge.sh` within former container.
-* Retrieve the final artifacts.
-* Unpatch affected deployments.
+
+`./unpatch.sh`
+
+* Optionally, unpatch affected deployments.
+
+`./merge.sh`
+
+* Merge them on auxiliary `kcap` image container using `/kcap/merge.sh` image utility.
 
 ## Download
 
-The script `capture.sh` can be used separately without need to clone/download this project because deployment patching procedure will pull the `kcap` docker image from Docker Hub when needed:
+The project scripts can be used separately without need to clone/download this project because deployment patching procedure will pull the `kcap` docker image from Docker Hub when needed:
 
 ```bash
 $ wget https://raw.githubusercontent.com/testillano/kcap/master/capture.sh && chmod +x capture.sh
+$ wget https://raw.githubusercontent.com/testillano/kcap/master/retrieve.sh && chmod +x retrieve.sh
+$ wget https://raw.githubusercontent.com/testillano/kcap/master/unpatch.sh && chmod +x unpatch.sh
+$ wget https://raw.githubusercontent.com/testillano/kcap/master/merge.sh && chmod +x merge.sh
+```
+
+## Demo
+
+There is a demo chart which deploys two [HTTP2 Agents](https://github.com/testillano/h2agent) with two replicas each, then starts captures and generate traffic using their component test image. Finally, stops captures and retrieves artifacts:
+
+```bash
+$ ./demo.sh
 ```
 
 ## License
