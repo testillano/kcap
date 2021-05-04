@@ -1,0 +1,33 @@
+demo:
+  name: demo
+  replicaCount: 1
+  image:
+    repository: testillano/ct-h2agent
+    pullPolicy: IfNotPresent
+    tag: latest
+  podAnnotations:
+    sidecar.istio.io/inject: "true"
+  resources: {}
+
+initContainer:
+  image:
+    repository: busybox
+    pullPolicy: IfNotPresent
+    tag: latest
+
+server1:
+  replicaCount: 2
+  h2agent:
+    name: server1
+    service:
+      admin_port: 8074
+      server_port: 8000
+
+server2:
+  replicaCount: 2
+  h2agent:
+    name: server2
+    service:
+      admin_port: 8074
+      server_port: 8000
+

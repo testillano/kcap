@@ -11,7 +11,7 @@ ARG plantumljar_ver=1.2021.4
 
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
-    wget \
+    wget curl \
     python3 python3-pip \
     default-jdk \
     net-tools tshark
@@ -22,6 +22,12 @@ RUN pip3 install hpack packaging pyyaml
 RUN set -x && \
     wget http://sourceforge.net/projects/plantuml/files/plantuml.${plantumljar_ver}.jar/download -O plantuml.jar && \
     set +x
+
+## kubectl
+#RUN set -x && \
+#    curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
+#    install -m 0755 kubectl /usr/local/bin/kubectl && \
+#    set +x
 
 # Build script
 COPY deps/* /kcap/

@@ -1,0 +1,17 @@
+apiVersion: v2
+appVersion: "1.0"
+description: Example chart to test captures
+name: demo
+type: application
+version: 1.0.0
+
+dependencies:
+  - name: h2agent
+    version: 1.0.0
+    repository: https://testillano.github.io/helm
+    alias: server1
+
+  - name: h2agent
+    version: 1.0.0
+    repository: https://testillano.github.io/helm
+    alias: server2
