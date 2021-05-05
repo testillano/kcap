@@ -43,11 +43,17 @@ SCR_DIR="$(dirname "$(readlink -f "$0")")"
 usage() {
   cat << EOF
 
-Usage: $0 <kcap artifacts>
+Usage: $0 <kcap artifacts> [http2 ports]
 
        This script will be executed over the artifacts directory after
        'retrieve.sh' execution, when all the pcaps have been gathered
        and join together under 'captures' subdirectory.
+
+       A space-separated list of HTTP/2 ports may be provided to restrict
+       the sequence diagram generation for merged captures. This could
+       improve performance and eliminate noise during the procedure. By
+       default, all the captures found under the artifacts directory will
+       be merged and post-processed.
 
        New artifacts, like PlantUML and svg sequence diagrams, will be
        created under artifacts subdirectory:
@@ -84,9 +90,11 @@ EOF
 
 [ -z "$1" ] && usage && exit 1
 ARTIFACTS_DIR=$1
+shift
+HTTP2_PORTS=$@
 
 RC=0
-docker run --rm -it -w /kcap -v "$(readlink -f "${ARTIFACTS_DIR}")":/artifacts testillano/kcap:latest ./merge.sh /artifacts || RC=1
+docker run --rm -it -w /kcap -v "$(readlink -f "${ARTIFACTS_DIR}")":/artifacts testillano/kcap:latest ./merge.sh /artifacts ${HTTP2_PORTS} || RC=1
 [ ${RC} -eq 1 ] && echo "Some errors detected during merge !"
 
 echo

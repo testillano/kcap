@@ -43,7 +43,7 @@ SCR_DIR="$(dirname "$(readlink -f "$0")")"
 usage() {
   cat << EOF
 
-Usage: $0 <artifacts directory>
+Usage: $0 <artifacts directory> [http2 ports]
 
        Artifacts directory provided must contain pcap files to be merged in this stage. Added artifacts
        here are courtesy of Deutsche Telekom 5G trace visualizer project (https://github.com/telekom/5g-trace-visualizer):
@@ -56,6 +56,10 @@ Usage: $0 <artifacts directory>
       So, these artifacts together with the 'capture.pcap' files from captures execution, are rich enough to
       trobuleshoot any issue related to network interfaces inside the kubernetes cluster.
 
+      A space-separated list of HTTP/2 ports may be provided to restrict the sequence diagram generation for
+      merged captures. This could improve performance and eliminate noise during the procedure. By default,
+      all the captures found under the artifacts directory will be merged and post-processed.
+
 EOF
 }
 
@@ -66,6 +70,8 @@ EOF
 [ -z "$1" ] && usage && exit 1
 
 ARTIFACTS_DIR=$1
+shift
+HTTP2_PORTS=$@
 
 # Generating visualizer artifacts:
 # shellcheck disable=SC2207
@@ -82,6 +88,13 @@ do
   port="$(basename "$(dirname "${pcap}")")"
   link=${count}
   if ! [[ $port =~ $re ]]; then continue; fi # skip non-numeric ports
+
+  if [ -n "${HTTP2_PORTS}" ]
+  then
+    echo "${HTTP2_PORTS}" | grep -qw "${port}"
+    [ $? -ne 0 ] && continue
+  fi
+
   pcaps+="${comma}${link}"
   ports+="${comma}${port}"
   comma=","

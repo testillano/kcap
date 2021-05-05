@@ -35,17 +35,16 @@ You may use different scripts to complete the following actions:
 
 `./merge.sh`
 
-* Merge them on auxiliary `kcap` image container using `/kcap/merge.sh` image utility.
+* Merge them on auxiliary `kcap` image container using `/kcap/merge.sh` image utility. This is focused in building sequence diagrams for HTTP/2 traffic, so the list of HTTP/2 ports should be provided to improve the procedure results.
 
 ## Download
 
 The project scripts can be used separately without need to clone/download this project because deployment patching procedure will pull the `kcap` docker image from Docker Hub when needed:
 
 ```bash
-$ wget https://raw.githubusercontent.com/testillano/kcap/master/capture.sh && chmod +x capture.sh
-$ wget https://raw.githubusercontent.com/testillano/kcap/master/retrieve.sh && chmod +x retrieve.sh
-$ wget https://raw.githubusercontent.com/testillano/kcap/master/unpatch.sh && chmod +x unpatch.sh
-$ wget https://raw.githubusercontent.com/testillano/kcap/master/merge.sh && chmod +x merge.sh
+$ url=https://raw.githubusercontent.com/testillano/kcap/master
+$ wget ${url}/{capture.sh,retrieve.sh,unpatch.sh,merge.sh} \
+  && chmod +x {capture.sh,retrieve.sh,unpatch.sh,merge.sh}
 ```
 
 ## Demo
