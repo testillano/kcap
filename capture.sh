@@ -240,13 +240,39 @@ capture() {
       podIP="$(kubectl get pods -n "${NAMESPACE}" "${pod}" -o=jsonpath="{.status.podIP}")"
       ports=( $(kubectl exec -n "${NAMESPACE}" "${pod}" -c kcap -- bash -c "cat ports" 2>/dev/null) )
       #echo "${pod}" > "${MD_DIR}/endpoints/${podIP}"
+
       cat << EOF > "${MD_DIR}/monitor/${pod}.sh"
 #!/bin/bash
 # Live captures monitoring
+
+echo
+[ "\$1" = "-h" -o "\$1" = "--help" ] && echo "Usage: \$0 [space-separated list of ports to monitor, ${ports[*]} by default]" && exit 0
+
+PORTS=\$@
+PIDS=()
 for port in ${ports[*]}
 do
-  kubectl exec -it -n "${NAMESPACE}" "${pod}" -c kcap -- bash -c "tail -F /kcap/artifacts/${podIP}/\${port}/capture.pcap" | wireshark -k -i - &
+  if [ -n "\${PORTS}" ]
+  then
+    echo "\${PORTS}" | grep -qw "\${port}"
+    [ \$? -ne 0 ] && continue
+  fi
+  echo "Start monitoring '\$(basename \$0 .sh)' at port \${port} ..."
+  pipe=/tmp/kcap-pipe.\${port}
+  rm -f \${pipe}
+  mkfifo \${pipe}
+  kubectl exec -n "${NAMESPACE}" "${pod}" -c kcap -- bash -c "tail -F -c +0 /kcap/artifacts/${podIP}/\${port}/capture.pcap" > \${pipe} &
+  PIDS+=(\$!)
+  sudo wireshark -k -i \${pipe} &>/dev/null &
+  pid=\$!
+  ppid=\$(ps --ppid \${pid} -o pid=)
+  until [ -n "\${ppid}" ]; do ppid=\$(ps --ppid \$! -o pid=); done
+  PIDS+=(\${ppid})
 done
+
+trap "sudo kill \${PIDS[*]} 2>/dev/null" INT QUIT TERM
+wait \${PIDS[*]}
+echo -e "\nFinished captures monitoring !\n"
 EOF
       chmod a+x "${MD_DIR}/monitor/${pod}.sh"
     fi

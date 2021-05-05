@@ -1,4 +1,4 @@
-# Kubernetes captures image (WORK-IN-PROGRESS)
+# Kubernetes captures image
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Documentation](https://codedocs.xyz/testillano/kcap.svg)](https://codedocs.xyz/testillano/kcap/index.html)
