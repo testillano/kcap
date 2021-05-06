@@ -100,11 +100,13 @@ Usage: $0 <namespace> [clean]
 
        Prepend variables:
 
-       KCAP_TAG: specify kcap image tag to use. By default 'latest'.
+       KCAP_TAG:   specify kcap image tag to use. By default 'latest'.
+       SKIP_PATCH: non-empty value skips patching stage.
 
        Examples:
 
        KCAP_TAG=1.0.0 $0 ns-ct-h2agent
+       SKIP_PATCH=yes $0 ns-ct-h2agent
 
 EOF
 }
@@ -308,21 +310,27 @@ rm -f last && ln -s "${ARTIFACTS_DIR}" last
 deployments=( $(kubectl get deployments -n "${NAMESPACE}" --no-headers 2>/dev/null | awk '{ print $1 }') )
 statefulsets=( $(kubectl get statefulsets -n "${NAMESPACE}" --no-headers 2>/dev/null | awk '{ print $1 }') )
 
-# Patch resources
-if [ "${#deployments[@]}" -ne 0 ]; then
-  echo
-  echo "=== Patch deployments ==="
-  for deployment in ${deployments[@]}; do
-    patch_resource deployment "${deployment}"
-  done
-fi
+if [ -z "${SKIP_PATCH}" ]
+then
+  # Patch resources
+  if [ "${#deployments[@]}" -ne 0 ]; then
+    echo
+    echo "=== Patch deployments ==="
+    for deployment in ${deployments[@]}; do
+      patch_resource deployment "${deployment}"
+    done
+  fi
 
-if [ "${#statefulsets[@]}" -ne 0 ]; then
+  if [ "${#statefulsets[@]}" -ne 0 ]; then
+    echo
+    echo "== Patch statefulsets ==="
+    for statefulset in ${statefulsets[@]}; do
+      patch_resource statefulset "${statefulset}"
+    done
+  fi
+else
   echo
-  echo "== Patch statefulsets ==="
-  for statefulset in ${statefulsets[@]}; do
-    patch_resource statefulset "${statefulset}"
-  done
+  echo "Skipping patching resources ..."
 fi
 
 # Block until new pods are ready
