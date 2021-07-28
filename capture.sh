@@ -283,6 +283,48 @@ EOF
   done
 }
 
+filter_resources() {
+  local resource_type=$1
+  shift
+  local resources=( $* )
+
+  local max_l=0
+  local rl=0
+  for resource in ${resources[@]}; do
+    RESOURCES_SELECTED[${resource}]=0
+    rl=$(echo ${resource} | wc -c)
+    [ $rl -gt $max_l ] && max_l=$rl
+  done
+
+  number='^[0-9]+$'
+  while true
+  do
+    echo
+    echo "Select ${resource_type} to be patched (captured):"
+    echo
+    count=1
+    for resource in ${resources[@]}; do
+      s_selected=
+      [ "${RESOURCES_SELECTED[$resource]}" = "1" ] && s_selected="[selected]"
+      printf "%d. %-${max_l}s%s\n" ${count} ${resource} ${s_selected}
+      count=$((count+1))
+    done
+    echo
+    echo "c. Confirm"
+    echo
+    echo "Select option:"
+    read opt
+    while [ -z "${opt}" ]; do read opt; done
+    [ "${opt}" = "c" ] && break
+    ! [[ ${opt} =~ $number ]] && echo -e "Invalid option\nPress ENTER to continue ..." && read -r dummy && continue
+    [ $opt -lt 1 -o $opt -gt ${#resources[@]} ] && echo -e "Invalid option (allowed [1,${#resources[@]}])\nPress ENTER to continue ..." && read -r dummy && continue
+    local indx=$((opt-1))
+    local resource=${resources[${indx}]}
+    local value=${RESOURCES_SELECTED[${resource}]}
+    RESOURCES_SELECTED[${resource}]=$((1-value))
+  done
+}
+
 #############
 # EXECUTION #
 #############
@@ -312,26 +354,21 @@ deployments_all=( $(kubectl get deployments -n "${NAMESPACE}" --no-headers 2>/de
 statefulsets_all=( $(kubectl get statefulsets -n "${NAMESPACE}" --no-headers 2>/dev/null | awk '{ print $1 }') )
 
 # Filter deployments
-echo
+declare -A RESOURCES_SELECTED
+filter_resources deployments ${deployments_all[*]}
 deployments=()
 for deployment in ${deployments_all[@]}; do
-  echo "Deployment: ${deployment}"
-  echo "Select (c)apture or [s]kip [s]:"
-  read opt
-  [ -z "${opt}" ] && opt=s
-  [ "${opt}" = "c" ] && deployments+=( ${deployment} )
+  [ "${RESOURCES_SELECTED[$deployment]}" = "1" ] && deployments+=( $deployment )
 done
 
 # Filter statefulsets
-echo
+filter_resources statefulsets ${statefulsets_all[*]}
 statefulsets=()
 for statefulset in ${statefulsets_all[@]}; do
-  echo "Statefulset: ${statefulset}"
-  echo "Select (c)apture or [s]kip [s]:"
-  read opt
-  [ -z "${opt}" ] && opt=s
-  [ "${opt}" = "c" ] && statefulsets+=( ${statefulset} )
+  [ "${RESOURCES_SELECTED[$statefulset]}" = "1" ] && statefulsets+=( $statefulset )
 done
+
+[ "${#deployments[@]}" -eq 0 -a "${#statefulsets[@]}" -eq 0 ] && echo -e "\nNothing selected for patching. Exiting ..." && exit 0
 
 if [ -z "${SKIP_PATCH}" ]
 then
