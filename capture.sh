@@ -216,6 +216,7 @@ save_endpoints() {
     ip="$(echo "${line}" | awk '{ print $1 }')"
     selector="$(echo "${line}" | awk '{ print $2 }')"
 
+    [ "${ip}" = "None" ] && continue
     # any of the endpoints is valid, as we will replace the service IP by the same thing than any of the associated endpoints
     ip_endpoint="$(kubectl get pod -n "${NAMESPACE}" --selector="${selector}" --no-headers -o wide | awk '{ print $6 }' | tail -1)"
 
@@ -307,8 +308,30 @@ echo "${NAMESPACE}" > "${MD_DIR}/namespace"
 rm -f last && ln -s "${ARTIFACTS_DIR}" last
 
 # Get all available deployments and statefulsets
-deployments=( $(kubectl get deployments -n "${NAMESPACE}" --no-headers 2>/dev/null | awk '{ print $1 }') )
-statefulsets=( $(kubectl get statefulsets -n "${NAMESPACE}" --no-headers 2>/dev/null | awk '{ print $1 }') )
+deployments_all=( $(kubectl get deployments -n "${NAMESPACE}" --no-headers 2>/dev/null | awk '{ print $1 }') )
+statefulsets_all=( $(kubectl get statefulsets -n "${NAMESPACE}" --no-headers 2>/dev/null | awk '{ print $1 }') )
+
+# Filter deployments
+echo
+deployments=()
+for deployment in ${deployments_all[@]}; do
+  echo "Deployment: ${deployment}"
+  echo "Select (c)apture or [s]kip [s]:"
+  read opt
+  [ -z "${opt}" ] && opt=s
+  [ "${opt}" = "c" ] && deployments+=( ${deployment} )
+done
+
+# Filter statefulsets
+echo
+statefulsets=()
+for statefulset in ${statefulsets_all[@]}; do
+  echo "Statefulset: ${statefulset}"
+  echo "Select (c)apture or [s]kip [s]:"
+  read opt
+  [ -z "${opt}" ] && opt=s
+  [ "${opt}" = "c" ] && statefulsets+=( ${statefulset} )
+done
 
 if [ -z "${SKIP_PATCH}" ]
 then

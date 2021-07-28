@@ -104,7 +104,7 @@ do
   then
     echo "You forgot to unpatch deployment previously, so captures may be mixed."
   else
-    nohup tshark -i any -f "tcp port ${port}" -w "${dir}/capture.pcap" &>/dev/null &
+    nohup tshark -i any -f "host ${IP} and tcp port ${port}" -w "${dir}/capture.pcap" &>/dev/null &
   fi
 done
 # shellcheck disable=SC2009
