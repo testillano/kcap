@@ -225,15 +225,16 @@ save_endpoints() {
   done < <(kubectl get services -n "${NAMESPACE}" --no-headers -o wide | awk '{ print $3 " " $7 }' | grep -vw "<none>")
 }
 
-# $1: deployment|statefulset; $2: resource name
+# $1: deployment|statefulset; $2: resource name; $3: space-separated list of ports to capture additionally
 capture() {
   local resource_type=$1
   local resource_name=$2
+  local ports_list="$3"
 
   local cmd=
   for pod in $(get_pods "${resource_type}" "${resource_name}")
   do
-    cmd="netstat -a | grep -w LISTEN | awk '{ print \$4 }' | cut -d: -f2 > ports ; hostname -i > ip"
+    cmd="netstat -a | grep -w LISTEN | awk '{ print \$4 }' | cut -d: -f2 > ports ; echo ${ports_list} >> ports ; hostname -i > ip"
     cmd+="; [ -s ports ] && ./start.sh \$(cat ip) \"\$(cat ports)\" ${CLEAN} 2>/dev/null"
     if kubectl exec -it -n "${NAMESPACE}" "${pod}" -c kcap -- bash -c "${cmd}" 2>/dev/null; then
       touch "${MD_DIR}/${resource_type}s/${resource_name}"
@@ -283,6 +284,20 @@ EOF
   done
 }
 
+# $1: what; $2: variable passed by reference
+provide_ports() {
+  local what=$1
+  local -n ref=$2
+
+  echo
+  echo "Aditional capture ports for ${what}:"
+  echo "Capture ports gathered are those in LISTEN state when captures are started."
+  echo "Provide ports space-separated list if they could be available later [skip]:"
+  read ports
+  local ports_array=( $(echo ${ports} | egrep -o '\b[0-9]+\b' | sort -u) )
+  ref="${ports_array[*]}"
+}
+
 filter_resources() {
   local resource_type=$1
   shift
@@ -324,6 +339,7 @@ filter_resources() {
     RESOURCES_SELECTED[${resource}]=$((1-value))
   done
 }
+
 
 #############
 # EXECUTION #
@@ -404,7 +420,8 @@ if [ "${#deployments[@]}" -ne 0 ]; then
   echo
   echo "=== Capture deployments ==="
   for deployment in ${deployments[@]}; do
-    capture deployment "${deployment}"
+    provide_ports "deployment ${deployment}" ports
+    capture deployment "${deployment}" "${ports}"
   done
 fi
 
@@ -412,7 +429,8 @@ if [ "${#statefulsets[@]}" -ne 0 ]; then
   echo
   echo "== Capture statefulsets ==="
   for statefulset in ${statefulsets[@]}; do
-    capture statefulset "${statefulset}"
+    provide_ports "statefulset ${statefulset}" ports
+    capture statefulset "${statefulset}" "${ports}"
   done
 fi
 
