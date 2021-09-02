@@ -37,7 +37,7 @@
 #############
 SCR_DIR="$(dirname "$(readlink -f "$0")")"
 PATCH_TIMEOUT=200s
-KCAP_TAG=${KCAP_TAG:-latest}
+KCAP_IMG=${KCAP_IMG:-testillano/kcap:latest}
 
 #############
 # FUNCTIONS #
@@ -100,12 +100,12 @@ Usage: $0 <namespace> [clean]
 
        Prepend variables:
 
-       KCAP_TAG:   specify kcap image tag to use. By default 'latest'.
+       KCAP_IMG:   specify kcap image to use. By default 'testillano/kcap:latest'.
        SKIP_PATCH: non-empty value skips patching stage.
 
        Examples:
 
-       KCAP_TAG=1.0.0 $0 ns-ct-h2agent
+       KCAP_IMG=testillano/kcap:1.0.0 $0 ns-ct-h2agent
        SKIP_PATCH=yes $0 ns-ct-h2agent
 
 EOF
@@ -157,7 +157,7 @@ patch_resource() {
               "spec": {
                   "containers": [
                       {
-                          "image": "testillano/kcap:'${KCAP_TAG}'",
+                          "image": "'${KCAP_IMG}'",
                           "terminationMessagePolicy": "File",
                           "imagePullPolicy": "IfNotPresent",
                           "name": "kcap",
@@ -303,6 +303,8 @@ filter_resources() {
   shift
   local resources=( $* )
 
+  [ "${#resources[@]}" -eq 0 ] && echo -e "\nNothing available for ${resource_type} to be selected" && return
+
   local max_l=0
   local rl=0
   for resource in ${resources[@]}; do
@@ -318,14 +320,15 @@ filter_resources() {
     echo "Select ${resource_type} to be patched (captured):"
     echo
     count=1
+    local s_nothing_selected=" (nothing selected!)"
     for resource in ${resources[@]}; do
       s_selected=
-      [ "${RESOURCES_SELECTED[$resource]}" = "1" ] && s_selected="[selected]"
+      [ "${RESOURCES_SELECTED[$resource]}" = "1" ] && s_selected="[selected]" && s_nothing_selected=
       printf "%d. %-${max_l}s%s\n" ${count} ${resource} ${s_selected}
       count=$((count+1))
     done
     echo
-    echo "c. Confirm"
+    echo "c. Confirm${s_nothing_selected}"
     echo
     echo "Select option:"
     read opt
@@ -384,6 +387,7 @@ for statefulset in ${statefulsets_all[@]}; do
   [ "${RESOURCES_SELECTED[$statefulset]}" = "1" ] && statefulsets+=( $statefulset )
 done
 
+# Check selections:
 [ "${#deployments[@]}" -eq 0 -a "${#statefulsets[@]}" -eq 0 ] && echo -e "\nNothing selected for patching. Exiting ..." && exit 0
 
 if [ -z "${SKIP_PATCH}" ]
