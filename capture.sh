@@ -220,7 +220,7 @@ save_endpoints() {
     # any of the endpoints is valid, as we will replace the service IP by the same thing than any of the associated endpoints
     ip_endpoint="$(kubectl get pod -n "${NAMESPACE}" --selector="${selector}" --no-headers -o wide | awk '{ print $6 }' | tail -1)"
 
-    cat "${MD_DIR}/endpoints/${ip_endpoint}" > "${MD_DIR}/endpoints/${ip}"
+    cat "${MD_DIR}/endpoints/${ip_endpoint}" 2>/dev/null > "${MD_DIR}/endpoints/${ip}"
 
   done < <(kubectl get services -n "${NAMESPACE}" --no-headers -o wide | awk '{ print $3 " " $7 }' | grep -vw "<none>")
 }
@@ -232,9 +232,12 @@ capture() {
   local ports_list="$3"
 
   local cmd=
+  local additional_ports=
+  [ -n "${ports_list}" ] && additional_ports="; echo ${ports_list} >> ports"
+
   for pod in $(get_pods "${resource_type}" "${resource_name}")
   do
-    cmd="netstat -a | grep -w LISTEN | awk '{ print \$4 }' | cut -d: -f2 > ports ; echo ${ports_list} >> ports ; hostname -i > ip"
+    cmd="netstat -a | grep -w LISTEN | awk '{ print \$4 }' | cut -d: -f2 > ports ${additional_ports} ; hostname -i > ip"
     cmd+="; [ -s ports ] && ./start.sh \$(cat ip) \"\$(cat ports)\" ${CLEAN} 2>/dev/null"
     if kubectl exec -it -n "${NAMESPACE}" "${pod}" -c kcap -- bash -c "${cmd}" 2>/dev/null; then
       touch "${MD_DIR}/${resource_type}s/${resource_name}"
@@ -290,7 +293,7 @@ provide_ports() {
   local -n ref=$2
 
   echo
-  echo "Aditional capture ports for ${what}:"
+  echo "Additional capture ports for '${what}':"
   echo "Capture ports gathered are those in LISTEN state when captures are started."
   echo "Provide ports space-separated list if they could be available later [skip]:"
   read ports
@@ -397,16 +400,18 @@ then
     echo
     echo "=== Patch deployments ==="
     for deployment in ${deployments[@]}; do
-      patch_resource deployment "${deployment}"
+      patch_resource deployment "${deployment}" &
     done
+    echo
   fi
 
   if [ "${#statefulsets[@]}" -ne 0 ]; then
     echo
     echo "== Patch statefulsets ==="
     for statefulset in ${statefulsets[@]}; do
-      patch_resource statefulset "${statefulset}"
+      patch_resource statefulset "${statefulset}" &
     done
+    echo
   fi
 else
   echo
