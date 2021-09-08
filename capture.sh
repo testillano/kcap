@@ -164,6 +164,9 @@ patch_resource() {
                           "stdin": true,
                           "tty": true,
                           "securityContext": {
+                              "allowPrivilegeEscalation": true,
+                              "runAsUser": 0,
+                              "runAsGroup": 0,
                               "capabilities": {
                                   "add": ["NET_ADMIN", "SYS_TIME"]
                               }
@@ -282,8 +285,16 @@ wait \${PIDS[*]}
 echo -e "\nFinished captures monitoring !\n"
 EOF
       chmod a+x "${MD_DIR}/monitor/${pod}.sh"
+    else
+      echo -n "Unable to capture at ${resource_type} '${resource_name}'. Unpatching it ... "
+      kubectl rollout undo ${resource_type}/"${resource_name}" -n "${NAMESPACE}" &>/dev/null
+      if [ $? -eq 0 ]
+      then
+        echo "done !"
+      else
+        echo "failed !"
+      fi
     fi
-
   done
 }
 
@@ -400,7 +411,7 @@ then
     echo
     echo "=== Patch deployments ==="
     for deployment in ${deployments[@]}; do
-      patch_resource deployment "${deployment}" &
+      patch_resource deployment "${deployment}"
     done
     echo
   fi
@@ -409,7 +420,7 @@ then
     echo
     echo "== Patch statefulsets ==="
     for statefulset in ${statefulsets[@]}; do
-      patch_resource statefulset "${statefulset}" &
+      patch_resource statefulset "${statefulset}"
     done
     echo
   fi

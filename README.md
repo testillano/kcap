@@ -18,10 +18,6 @@ $ docker pull testillano/kcap:<tag>
 
 You could also build it using the script `./build.sh` located at project root.
 
-## Requisites
-
-Take care about of [security policies](https://kubernetes.io/docs/concepts/policy/pod-security-policy/) and privilege escalation within your deployment in order to allow `tshark` working properly.
-
 ## Usage
 
 You may use different scripts to complete the following actions:
