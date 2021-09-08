@@ -100,8 +100,11 @@ Usage: $0 <namespace> [clean]
 
        Prepend variables:
 
-       KCAP_IMG:   specify kcap image to use. By default 'testillano/kcap:latest'.
-       SKIP_PATCH: non-empty value skips patching stage.
+       KCAP_IMG:   Specify kcap image to use.
+                   Defaults to 'testillano/kcap:latest', uploaded to docker hub:
+                     https://hub.docker.com/repository/docker/testillano/kcap
+
+       SKIP_PATCH: Non-empty value skips patching stage.
 
        Examples:
 
