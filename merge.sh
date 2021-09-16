@@ -36,6 +36,7 @@
 # VARIABLES #
 #############
 SCR_DIR="$(dirname "$(readlink -f "$0")")"
+KCAP_IMG=${KCAP_IMG:-testillano/kcap:latest}
 
 #############
 # FUNCTIONS #
@@ -81,6 +82,16 @@ Usage: $0 <kcap artifacts> [http2 ports]
                     │   └── server2
                 ...
 
+       Prepend variables:
+
+       KCAP_IMG:   Specify kcap image to use.
+                   Defaults to 'testillano/kcap:latest', uploaded to docker hub:
+                     https://hub.docker.com/repository/docker/testillano/kcap
+
+       Examples:
+
+       KCAP_IMG=testillano/kcap:1.0.0 $0 last
+
 EOF
 }
 
@@ -95,7 +106,7 @@ shift
 HTTP2_PORTS=$@
 
 RC=0
-docker run --rm -it -w /kcap -v "$(readlink -f "${ARTIFACTS_DIR}")":/artifacts testillano/kcap:latest ./merge.sh /artifacts ${HTTP2_PORTS} || RC=1
+docker run --rm -it -w /kcap -v "$(readlink -f "${ARTIFACTS_DIR}")":/artifacts ${KCAP_IMG} ./merge.sh /artifacts ${HTTP2_PORTS} || RC=1
 [ ${RC} -eq 1 ] && echo "Some errors detected during merge !"
 
 echo
