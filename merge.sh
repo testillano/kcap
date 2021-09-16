@@ -89,6 +89,7 @@ EOF
 #############
 
 [ -z "$1" ] && usage && exit 1
+[ -z "$1" -o "$1" = "-h" -o "$1" = "--help" ] && usage && exit 1
 ARTIFACTS_DIR=$1
 shift
 HTTP2_PORTS=$@

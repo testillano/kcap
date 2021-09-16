@@ -114,6 +114,11 @@ Usage: $0 <namespace> [clean]
 EOF
 }
 
+is_minikube() {
+  local context=$(kubectl config get-contexts | awk '$1 == "*" { print $3 }')
+  [ "${context}" = "minikube" ]
+}
+
 # $1: deployment|statefulset; $2: resource name
 get_pods() {
   local resource_type=$1
@@ -186,6 +191,11 @@ block_until_ready() {
   for pod in $(find "${MD_DIR}/pods_for_deletion" -type f | xargs -L1 basename 2>/dev/null)
   do
     echo "Wait for pod '${pod}' deletion ..."
+    if is_minikube
+    then
+      echo "(on minikube systems, this could be stuck due to pending state in"
+      echo " new patched pod, so check it and delete the old one if necessary)"
+    fi
     kubectl -n "${NAMESPACE}" wait --for=delete pod/"${pod}" --timeout="${PATCH_TIMEOUT}" &>/dev/null
   done
 
@@ -365,7 +375,7 @@ filter_resources() {
 # EXECUTION #
 #############
 
-[ -z "$1" ] && usage && exit 1
+[ -z "$1" -o "$1" = "-h" -o "$1" = "--help" ] && usage && exit 1
 NAMESPACE=$1
 CLEAN=$2
 

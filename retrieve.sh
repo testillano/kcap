@@ -107,7 +107,7 @@ retrieve_artifacts_from_pods() {
 # EXECUTION #
 #############
 
-[ -z "$1" ] && usage && exit 1
+[ -z "$1" -o "$1" = "-h" -o "$1" = "--help" ] && usage && exit 1
 ARTIFACTS_DIR=$1
 
 MD_DIR="${ARTIFACTS_DIR}/metadata"
