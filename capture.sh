@@ -173,6 +173,7 @@ patch_resource() {
                           "tty": true,
                           "securityContext": {
                               "allowPrivilegeEscalation": true,
+                              "runAsNonRoot": false,
                               "runAsUser": 0,
                               "runAsGroup": 0,
                               "capabilities": {
