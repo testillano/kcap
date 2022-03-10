@@ -63,8 +63,6 @@ Usage: $0 <namespace> [clean]
                     │   ├── server1
                     │   └── server2
                     ├── endpoints
-                    │   ├── 10.105.101.231
-                    │   ├── 10.111.17.117
                     │   ├── 172.17.0.13
                     │   ├── 172.17.0.16
                     │   ├── 172.17.0.17
@@ -86,6 +84,9 @@ Usage: $0 <namespace> [clean]
                     │   ├── server1-85f9648b44-x7swt
                     │   ├── server2-55678bd5b4-4l9dn
                     │   └── server2-55678bd5b4-t4cwm
+                    ├── services
+                    │   ├── server1
+                    │   └── server2
                     └── statefulsets
 
 
@@ -205,9 +206,10 @@ block_until_ready() {
   # kubectl -n "${NAMESPACE}" wait --for=condition=Ready pod/${pod} --timeout=${PATCH_TIMEOUT}
 }
 
-# Persist endpoints
-save_endpoints() {
+# Persist endpoints and services
+save_endpoints_and_services() {
   local endpoint
+  local service
   local addrs
   local ips
   local current
@@ -237,7 +239,11 @@ save_endpoints() {
     # any of the endpoints is valid, as we will replace the service IP by the same thing than any of the associated endpoints
     ip_endpoint="$(kubectl get pod -n "${NAMESPACE}" --selector="${selector}" --no-headers -o wide | awk '{ print $6 }' | tail -1)"
 
-    cat "${MD_DIR}/endpoints/${ip_endpoint}" 2>/dev/null > "${MD_DIR}/endpoints/${ip}"
+    services=$(cat "${MD_DIR}/endpoints/${ip_endpoint}" 2>/dev/null)
+    for service in ${services}
+    do
+      echo "${ip}" > ${MD_DIR}/services/${service}
+    done
 
   done < <(kubectl get services -n "${NAMESPACE}" --no-headers -o wide | awk '{ print $3 " " $7 }' | grep -vw "<none>")
 }
@@ -254,6 +260,12 @@ capture() {
 
   for pod in $(get_pods "${resource_type}" "${resource_name}")
   do
+    #IP="$(kubectl get pods -n "${NAMESPACE}" "${pod}" -o=jsonpath="{.status.podIP}" 2>/dev/null)"
+    #service=$(cat ${MD_DIR}/endpoints/${IP} 2>/dev/null)
+    #serviceIP=$(cat ${MD_DIR}/services/${service} 2>/dev/null)
+    #[ -n "${serviceIP}" ] && IP=${serviceIP}
+
+    #cmd="netstat -a | grep -w LISTEN | awk '{ print \$4 }' | cut -d: -f2 > ports ${additional_ports} ; echo ${IP} > ip"
     cmd="netstat -a | grep -w LISTEN | awk '{ print \$4 }' | cut -d: -f2 > ports ${additional_ports} ; hostname -i > ip"
     cmd+="; [ -s ports ] && ./start.sh \$(cat ip) \"\$(cat ports)\" ${CLEAN} 2>/dev/null"
     if kubectl exec -it -n "${NAMESPACE}" "${pod}" -c kcap -- bash -c "${cmd}" 2>/dev/null; then
@@ -386,7 +398,7 @@ ARTIFACTS_DIR="${SCR_DIR}/artifacts/kcap/$(date +'%d%m%Y_%H%M%S')"
 # Metadata
 MD_DIR="${ARTIFACTS_DIR}/metadata"
 mkdir -p "${MD_DIR}"
-for dir in deployments statefulsets endpoints pods_for_deletion pods monitor; do
+for dir in deployments statefulsets endpoints services ports pods_for_deletion pods monitor; do
   mkdir "${MD_DIR}/${dir}" || { echo "Error creating metadata directory for '${dir}' !" && exit 1; }
 done
 
@@ -446,8 +458,8 @@ fi
 # Block until new pods are ready
 block_until_ready
 
-# Persist new endpoints
-save_endpoints
+# Persist new endpoints and services
+save_endpoints_and_services
 
 # Capture
 if [ "${#deployments[@]}" -ne 0 ]; then

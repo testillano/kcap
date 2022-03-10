@@ -118,6 +118,7 @@ echo
 echo "Retrieve artifacts ..."
 retrieve_artifacts_from_pods
 
+shopt -s extglob
 cat << EOF
 
 === Joined captures ===
@@ -132,6 +133,11 @@ As a recommendation, remove (or move away from 'last' structure)
 all those pcaps that are not related to HTTP/2 protocol, because
 they could dirty the final artifacts and would take many time to
 complete the merge stage.
+
+You could also provide ports to be analized, by default all available
+ports are processed:
+
+./merge.sh last $(ls -d last/captures/*/*/+([0-9])/ | xargs -L1 basename | sort -u | tr '\n' ' ')
 
 
 To unpatch deployment(s)/statefulset(s), you may execute:

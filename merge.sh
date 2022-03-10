@@ -69,18 +69,26 @@ Usage: $0 <kcap artifacts> [http2 ports]
                 │   │       └── 8074
                 │   │           └── capture.pcap
                 ...
-                ├── merged.atxt             merged: original merged data
-                ├── merged.pdml             merged2: endpoints collapsed
-                ├── merged.puml
-                ├── merged.svg
-                ├── merged2.atxt            .atxt: Ascii sequence diagram
-                ├── merged2.puml            .puml: PlantUML artifact
-                ├── merged2.svg             .svg:  Vector graphics artifact
+                ├── flow.1
+                │   ├── merged.atxt  | merged: original merged data
+                │   ├── merged.puml  |
+                │   ├── merged.svg   |
+                │   ├── merged2.atxt | merged2: endpoints collapsed
+                │   ├── merged2.puml |
+                │   └── merged2.svg  |
+                ├── merged.pdml
                 └── metadata
                     ├── deployments
                     │   ├── server1
                     │   └── server2
                 ...
+
+       Merged extensions:
+
+       .pdml: xml artifact
+       .atxt: Ascii sequence diagram
+       .puml: PlantUML artifact
+       .svg:  Vector graphics artifact
 
        Prepend variables:
 
@@ -114,6 +122,6 @@ echo "All artifacts available at:"
 echo
 if tree --version &>/dev/null ; then tree "${ARTIFACTS_DIR}" ; fi
 echo
-echo "Try: firefox last/merged.svg"
+echo "Try: firefox $(ls last/flow*/*.svg | tr '\n' ' ')"
 echo
 
