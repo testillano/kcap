@@ -331,8 +331,11 @@ provide_ports() {
 
   echo
   echo "Additional capture ports for '${what}':"
-  echo "Capture ports gathered are those in LISTEN state when captures are started."
-  echo "Provide ports space-separated list if they could be available later [skip]:"
+  echo
+  echo "By default, this procedure will capture current ports in LISTEN state,"
+  echo " but you may need to capture outgoing traffic ports or perhaps other"
+  echo " listen ports which will be available later. Then, you must provide"
+  echo " those ports as an space-separated list to be added [skip]:"
   read ports
   local ports_array=( $(echo ${ports} | egrep -o '\b[0-9]+\b' | sort -u) )
   ref="${ports_array[*]}"
