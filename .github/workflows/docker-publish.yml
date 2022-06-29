@@ -55,8 +55,6 @@ jobs:
       -
         name: Push image manually
         run: |
-          IMAGE_ID=docker.io/testillano/kcap
-
           # workflow dispatch event:
           image_tag=${{ github.event.inputs.tag }}
           echo Workflow dispatch image_tag=$image_tag
@@ -72,7 +70,8 @@ jobs:
 
           echo Processed image_tag=$image_tag
 
-          docker tag testillano/kcap:local $IMAGE_ID:$image_tag
-
-          docker push $IMAGE_ID:$image_tag
-
+          for hub in docker.io ghcr.io
+          do
+            docker tag testillano/kcap:local ${hub}/testillano/kcap:$image_tag
+            docker push ${hub}/testillano/kcap:$image_tag
+          done
