@@ -43,7 +43,7 @@ You may use the following scripts to complete 4 different actions in a natural o
 
 ## Download
 
-The project scripts can be used separately without need to clone/download this project because deployment patching procedure will pull the `kcap` docker image from Docker Hub when needed:
+The project scripts can be used separately without need to clone/download this project because deployment patching procedure will pull the `kcap` docker image from Docker Hub when needed. Just copy/paste the following in a `bash` shell, and run `./capture.sh` script to start:
 
 ```bash
 wget https://raw.githubusercontent.com/testillano/kcap/master/\
