@@ -105,9 +105,9 @@ test_pod="$(get_pod "${NAMESPACE}" demo)"
 [ -z "${test_pod}" ] && echo "Missing target pod to test" && exit 1
 
 # shellcheck disable=SC2068
-kubectl exec -it "${test_pod}" -c demo1 -n "${NAMESPACE}" -- pytest $@
+kubectl exec -it "${test_pod}" -c demo1 -n "${NAMESPACE}" -- sh -c "source /venv/bin/activate && pytest $@"
 # shellcheck disable=SC2068
-kubectl exec -it "${test_pod}" -c demo2 -n "${NAMESPACE}" -- pytest $@
+kubectl exec -it "${test_pod}" -c demo2 -n "${NAMESPACE}" -- sh -c "source /venv/bin/activate && pytest $@"
 
 echo -e "\nRetrieve capture artifacts ..."
 ${REPO_DIR}/retrieve.sh last

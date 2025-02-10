@@ -12,11 +12,11 @@ ARG plantumljar_ver=1.2021.4
 ENV DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && apt-get install -y \
     wget curl \
-    python3 python3-pip \
+    python3 python3-pip python3.12-venv \
     default-jdk \
     net-tools tshark
 
-RUN pip3 install hpack packaging pyyaml
+RUN python3 -m venv /venv && source /venv/bin/activate && pip3 install hpack packaging pyyaml
 
 # plantuml.jar
 RUN set -x && \
