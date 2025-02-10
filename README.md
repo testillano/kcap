@@ -5,6 +5,7 @@
 [![Ask Me Anything !](https://img.shields.io/badge/Ask%20me-anything-1abc9c.svg)](https://github.com/testillano)
 [![Maintenance](https://img.shields.io/badge/Maintained%3F-yes-green.svg)](https://github.com/testillano/kcap/graphs/commit-activity)
 [![Build docker image and publish to Docker Hub](https://github.com/testillano/kcap/actions/workflows/docker-publish.yml/badge.svg)](https://github.com/testillano/kcap/actions/workflows/docker-publish.yml)
+[![Docker Pulls](https://img.shields.io/docker/pulls/testillano/kcap.svg)](https://github.com/testillano/kcap/pkgs/container/kcap)
 
 This project hosts the stuff to build the `kcap` docker image useful to capture traffic within a kubernetes cluster.
 
