@@ -16,7 +16,7 @@ RUN apt-get update && apt-get install -y \
     default-jdk \
     net-tools tshark
 
-RUN python3 -m venv /venv && source /venv/bin/activate && pip3 install hpack packaging pyyaml
+RUN python3 -m venv /venv && . /venv/bin/activate && pip3 install hpack packaging pyyaml
 
 # plantuml.jar
 RUN set -x && \
